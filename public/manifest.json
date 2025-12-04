@@ -1,0 +1,16 @@
+{
+  "name": "app-panel",
+  "short_name": "app-panel",
+  "description": "AI 自動化社交媒體發佈",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0f1a",
+  "theme_color": "#0a0f1a",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
