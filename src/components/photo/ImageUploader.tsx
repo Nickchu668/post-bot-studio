@@ -10,10 +10,10 @@ interface ImageUploaderProps {
   onImageChange: (image: string | null) => void;
 }
 
-const aspectRatioClasses = {
-  horizontal: "aspect-video",
-  square: "aspect-square",
-  vertical: "aspect-[9/16]",
+const aspectRatioValues = {
+  horizontal: 16 / 9,
+  square: 1,
+  vertical: 9 / 16,
 };
 
 export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUploaderProps) {
@@ -45,6 +45,24 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
 
   const handleDragLeave = () => {
     setIsDragging(false);
+  };
+
+  // Calculate crop overlay dimensions based on aspect ratio
+  const getCropOverlayStyle = () => {
+    const ratio = aspectRatioValues[aspectRatio];
+    if (ratio >= 1) {
+      // Horizontal or square - width is 100%, height is proportional
+      return {
+        width: '70%',
+        height: `${70 / ratio}%`,
+      };
+    } else {
+      // Vertical - height is 100%, width is proportional
+      return {
+        width: `${70 * ratio}%`,
+        height: '90%',
+      };
+    }
   };
 
   return (
@@ -109,38 +127,52 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="relative">
-            <div
-              className={cn(
-                "relative overflow-hidden rounded-xl bg-secondary mx-auto max-w-md",
-                aspectRatioClasses[aspectRatio]
-              )}
-            >
+          <div className="relative bg-card rounded-xl overflow-hidden">
+            {/* Image container with overlay */}
+            <div className="relative w-full aspect-[4/3] bg-secondary">
               <img
                 src={image}
                 alt="Preview"
                 className="absolute inset-0 w-full h-full object-cover"
               />
+              
+              {/* Dark overlay outside crop area */}
+              <div className="absolute inset-0 bg-black/50" />
+              
+              {/* Crop frame overlay */}
+              <div 
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-cyan-400 bg-transparent"
+                style={getCropOverlayStyle()}
+              >
+                {/* Corner handles */}
+                <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-cyan-400" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-cyan-400" />
+                <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-cyan-400" />
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-cyan-400" />
+                
+                {/* Clear the crop area */}
+                <div 
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage: `url(${image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    clipPath: 'inset(0)',
+                  }}
+                />
+              </div>
             </div>
+            
+            {/* Remove button */}
             <button
               type="button"
               onClick={() => onImageChange(null)}
-              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors z-10"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="flex justify-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="w-4 h-4" />
-              更換圖片
-            </Button>
-          </div>
+          
           <input
             ref={fileInputRef}
             type="file"
