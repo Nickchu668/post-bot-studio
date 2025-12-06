@@ -16,7 +16,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner position="top-center" />
-      <BrowserRouter>
+      <BrowserRouter basename="/post-bot-studio">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/video" element={<VideoPost />} />
