@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Upload, Camera, X, ImageIcon } from "lucide-react";
+import { useRef, useState, useCallback } from "react";
+import { Upload, Camera, X, ImageIcon, Move } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AspectRatio } from "./AspectRatioSelector";
@@ -19,13 +19,17 @@ const aspectRatioValues = {
 export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [cropPosition, setCropPosition] = useState({ x: 50, y: 50 });
+  const [isDraggingCrop, setIsDraggingCrop] = useState(false);
 
   const handleFileSelect = (file: File) => {
     if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = (e) => {
         onImageChange(e.target?.result as string);
+        setCropPosition({ x: 50, y: 50 });
       };
       reader.readAsDataURL(file);
     }
@@ -47,42 +51,79 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
     setIsDragging(false);
   };
 
+  const handleCropMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDraggingCrop(true);
+  }, []);
+
+  const handleCropMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDraggingCrop || !containerRef.current) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    setCropPosition({
+      x: Math.max(15, Math.min(85, x)),
+      y: Math.max(15, Math.min(85, y)),
+    });
+  }, [isDraggingCrop]);
+
+  const handleCropMouseUp = useCallback(() => {
+    setIsDraggingCrop(false);
+  }, []);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    setIsDraggingCrop(true);
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isDraggingCrop || !containerRef.current) return;
+    
+    const touch = e.touches[0];
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = ((touch.clientX - rect.left) / rect.width) * 100;
+    const y = ((touch.clientY - rect.top) / rect.height) * 100;
+    
+    setCropPosition({
+      x: Math.max(15, Math.min(85, x)),
+      y: Math.max(15, Math.min(85, y)),
+    });
+  }, [isDraggingCrop]);
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDraggingCrop(false);
+  }, []);
+
   // Calculate crop overlay dimensions based on aspect ratio
-  const getCropOverlayStyle = () => {
+  const getCropDimensions = () => {
     const ratio = aspectRatioValues[aspectRatio];
     if (ratio >= 1) {
-      // Horizontal or square - width is 100%, height is proportional
-      return {
-        width: '70%',
-        height: `${70 / ratio}%`,
-      };
+      return { width: 65, height: 65 / ratio };
     } else {
-      // Vertical - height is 100%, width is proportional
-      return {
-        width: `${70 * ratio}%`,
-        height: '90%',
-      };
+      return { width: 50 * ratio, height: 80 };
     }
   };
 
+  const cropDimensions = getCropDimensions();
+
   return (
     <div className="space-y-4">
-      <label className="text-sm font-medium text-foreground">上傳圖片</label>
-      
       {!image ? (
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           className={cn(
-            "relative border-2 border-dashed rounded-xl p-8 transition-all duration-200",
+            "relative border-2 border-dashed rounded-2xl p-8 transition-all duration-200",
             isDragging
               ? "border-primary bg-primary/10"
-              : "border-border hover:border-primary/50 bg-card"
+              : "border-border hover:border-primary/50 bg-card/50"
           )}
         >
           <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-secondary/80 flex items-center justify-center">
               <ImageIcon className="w-8 h-8 text-muted-foreground" />
             </div>
             <div className="text-center">
@@ -93,7 +134,9 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={() => fileInputRef.current?.click()}
+                className="gap-2"
               >
                 <Upload className="w-4 h-4" />
                 選擇檔案
@@ -101,7 +144,9 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={() => cameraInputRef.current?.click()}
+                className="gap-2"
               >
                 <Camera className="w-4 h-4" />
                 拍攝相片
@@ -126,38 +171,64 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
           />
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="relative bg-card rounded-xl overflow-hidden">
-            {/* Image container with overlay */}
-            <div className="relative w-full aspect-[4/3] bg-secondary">
+        <div className="space-y-3">
+          {/* Image container with crop overlay */}
+          <div 
+            ref={containerRef}
+            className="relative bg-secondary/30 rounded-2xl overflow-hidden select-none"
+            onMouseMove={handleCropMouseMove}
+            onMouseUp={handleCropMouseUp}
+            onMouseLeave={handleCropMouseUp}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className="relative w-full aspect-[4/3]">
+              {/* Background image */}
               <img
                 src={image}
                 alt="Preview"
                 className="absolute inset-0 w-full h-full object-cover"
+                draggable={false}
               />
               
-              {/* Dark overlay outside crop area */}
-              <div className="absolute inset-0 bg-black/50" />
+              {/* Dark overlay */}
+              <div className="absolute inset-0 bg-black/60" />
               
-              {/* Crop frame overlay */}
+              {/* Crop frame - draggable */}
               <div 
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-cyan-400 bg-transparent"
-                style={getCropOverlayStyle()}
+                className={cn(
+                  "absolute border-2 border-cyan-400 cursor-move transition-shadow",
+                  isDraggingCrop && "shadow-[0_0_20px_rgba(0,255,255,0.5)]"
+                )}
+                style={{
+                  width: `${cropDimensions.width}%`,
+                  height: `${cropDimensions.height}%`,
+                  left: `${cropPosition.x - cropDimensions.width / 2}%`,
+                  top: `${cropPosition.y - cropDimensions.height / 2}%`,
+                }}
+                onMouseDown={handleCropMouseDown}
+                onTouchStart={handleTouchStart}
               >
                 {/* Corner handles */}
-                <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-cyan-400" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-cyan-400" />
-                <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-cyan-400" />
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-cyan-400" />
+                <div className="absolute -top-1.5 -left-1.5 w-4 h-4 border-t-3 border-l-3 border-cyan-400 bg-cyan-400/20" />
+                <div className="absolute -top-1.5 -right-1.5 w-4 h-4 border-t-3 border-r-3 border-cyan-400 bg-cyan-400/20" />
+                <div className="absolute -bottom-1.5 -left-1.5 w-4 h-4 border-b-3 border-l-3 border-cyan-400 bg-cyan-400/20" />
+                <div className="absolute -bottom-1.5 -right-1.5 w-4 h-4 border-b-3 border-r-3 border-cyan-400 bg-cyan-400/20" />
                 
-                {/* Clear the crop area */}
+                {/* Center move indicator */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="bg-black/40 rounded-full p-2">
+                    <Move className="w-5 h-5 text-cyan-400" />
+                  </div>
+                </div>
+                
+                {/* Clear crop area showing the image */}
                 <div 
-                  className="absolute inset-0"
+                  className="absolute inset-0 overflow-hidden"
                   style={{
                     backgroundImage: `url(${image})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    clipPath: 'inset(0)',
+                    backgroundSize: `${100 / (cropDimensions.width / 100)}% ${100 / (cropDimensions.height / 100)}%`,
+                    backgroundPosition: `${(cropPosition.x - cropDimensions.width / 2) / (100 - cropDimensions.width) * 100}% ${(cropPosition.y - cropDimensions.height / 2) / (100 - cropDimensions.height) * 100}%`,
                   }}
                 />
               </div>
@@ -172,6 +243,18 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
               <X className="w-4 h-4" />
             </button>
           </div>
+          
+          {/* Change image button */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full text-muted-foreground hover:text-foreground"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            更換圖片
+          </Button>
           
           <input
             ref={fileInputRef}

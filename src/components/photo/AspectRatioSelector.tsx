@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import { RectangleHorizontal, Square, RectangleVertical } from "lucide-react";
 
 export type AspectRatio = "horizontal" | "square" | "vertical";
 
@@ -9,16 +8,16 @@ interface AspectRatioSelectorProps {
 }
 
 const ratios = [
-  { id: "horizontal" as const, icon: RectangleHorizontal, label: "橫向", ratio: "16:9" },
-  { id: "square" as const, icon: Square, label: "正方形", ratio: "1:1" },
-  { id: "vertical" as const, icon: RectangleVertical, label: "直向", ratio: "9:16" },
+  { id: "horizontal" as const, label: "16:9", icon: "▬" },
+  { id: "square" as const, label: "1:1", icon: "■" },
+  { id: "vertical" as const, label: "9:16", icon: "▮" },
 ];
 
 export function AspectRatioSelector({ value, onChange }: AspectRatioSelectorProps) {
   return (
-    <div className="space-y-3">
-      <label className="text-sm font-medium text-foreground">選擇圖片尺寸</label>
-      <div className="grid grid-cols-3 gap-3">
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted-foreground">比例</span>
+      <div className="flex gap-1 bg-secondary/50 rounded-lg p-1">
         {ratios.map((ratio) => {
           const isActive = value === ratio.id;
           return (
@@ -27,15 +26,14 @@ export function AspectRatioSelector({ value, onChange }: AspectRatioSelectorProp
               type="button"
               onClick={() => onChange(ratio.id)}
               className={cn(
-                "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200",
                 isActive
-                  ? "border-primary bg-primary/10 text-primary shadow-glow"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
-              <ratio.icon className={cn("w-8 h-8", isActive && "text-primary")} />
-              <span className="text-sm font-medium">{ratio.label}</span>
-              <span className="text-xs opacity-70">{ratio.ratio}</span>
+              <span className="text-xs">{ratio.icon}</span>
+              <span>{ratio.label}</span>
             </button>
           );
         })}
