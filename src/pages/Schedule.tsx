@@ -11,6 +11,7 @@ interface SheetRow {
   authorized: string;
   status: string;
   publishDate: string;
+  source: string;
 }
 
 export default function Schedule() {
@@ -149,6 +150,7 @@ export default function Schedule() {
                 <thead>
                   <tr className="border-b border-border bg-secondary/50">
                     <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">縮圖</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">來源</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">受權刊出</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">刊登情況</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">刊出日期</th>
@@ -189,6 +191,11 @@ export default function Schedule() {
                             <Calendar className="w-6 h-6 text-muted-foreground" />
                           </div>
                         )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-foreground">
+                          {row.source || '-'}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         {getAuthorizedBadge(row.authorized)}
