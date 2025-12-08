@@ -129,8 +129,9 @@ serve(async (req) => {
     const authorizedIndex = headers.findIndex(h => h.includes('受權刊出') || h.includes('授權刊出'));
     const statusIndex = headers.findIndex(h => h.includes('刊登情況'));
     const dateIndex = headers.findIndex(h => h.includes('刊出日期'));
+    const sourceIndex = headers.findIndex(h => h.includes('來源') || h.includes('地點'));
 
-    console.log('Column indices:', { imageUrlIndex, authorizedIndex, statusIndex, dateIndex });
+    console.log('Column indices:', { imageUrlIndex, authorizedIndex, statusIndex, dateIndex, sourceIndex });
 
     const data = rows.slice(1).map((row: string[], index: number) => ({
       id: index + 1,
@@ -138,8 +139,9 @@ serve(async (req) => {
       authorized: authorizedIndex >= 0 ? row[authorizedIndex] || '' : '',
       status: statusIndex >= 0 ? row[statusIndex] || '' : '',
       publishDate: dateIndex >= 0 ? row[dateIndex] || '' : '',
-    })).filter((item: { imageUrl: string; authorized: string; status: string; publishDate: string }) => 
-      item.imageUrl || item.authorized || item.status || item.publishDate
+      source: sourceIndex >= 0 ? row[sourceIndex] || '' : '',
+    })).filter((item: { imageUrl: string; authorized: string; status: string; publishDate: string; source: string }) => 
+      item.imageUrl || item.authorized || item.status || item.publishDate || item.source
     );
 
     console.log(`Returning ${data.length} records`);
