@@ -125,22 +125,37 @@ serve(async (req) => {
     console.log('Headers:', headers);
     
     // Find column indices for the required fields
-    const imageUrlIndex = headers.findIndex(h => h.includes('圖片連結'));
+    // Column mapping based on Google Sheet structure:
+    // A: 圖片連結/來源連結, B: 簡單內容, C: AI 完整內容, D: 地點, E: 來源, F: AI 處理, G: 制作日期, H: 刊出日期, I: 受權刊出, J: 刊登情況, K: ig, L: facebook
+    const imageUrlIndex = headers.findIndex(h => h.includes('圖片連結') || h.includes('來源連結'));
     const authorizedIndex = headers.findIndex(h => h.includes('受權刊出') || h.includes('授權刊出'));
     const statusIndex = headers.findIndex(h => h.includes('刊登情況'));
     const dateIndex = headers.findIndex(h => h.includes('刊出日期'));
-    const sourceIndex = headers.findIndex(h => h.includes('來源') || h.includes('地點'));
+    const sourceIndex = 4; // E column is "來源" (0-indexed: E = 4)
+    const igIndex = headers.findIndex(h => h.toLowerCase() === 'ig');
+    const fbIndex = headers.findIndex(h => h.toLowerCase() === 'facebook' || h.toLowerCase() === 'fb');
+    const ytIndex = headers.findIndex(h => h.toLowerCase() === 'youtube' || h.toLowerCase() === 'yt');
+    const contentIndex = headers.findIndex(h => h.includes('簡單內容'));
+    const aiContentIndex = headers.findIndex(h => h.includes('AI 完整內容'));
+    const locationIndex = headers.findIndex(h => h.includes('地點'));
 
-    console.log('Column indices:', { imageUrlIndex, authorizedIndex, statusIndex, dateIndex, sourceIndex });
+    console.log('Column indices:', { imageUrlIndex, authorizedIndex, statusIndex, dateIndex, sourceIndex, igIndex, fbIndex, ytIndex });
 
     const data = rows.slice(1).map((row: string[], index: number) => ({
       id: index + 1,
+      rowIndex: index + 2, // Actual row number in spreadsheet (1-indexed + header)
       imageUrl: imageUrlIndex >= 0 ? row[imageUrlIndex] || '' : '',
       authorized: authorizedIndex >= 0 ? row[authorizedIndex] || '' : '',
       status: statusIndex >= 0 ? row[statusIndex] || '' : '',
       publishDate: dateIndex >= 0 ? row[dateIndex] || '' : '',
-      source: sourceIndex >= 0 ? row[sourceIndex] || '' : '',
-    })).filter((item: { imageUrl: string; authorized: string; status: string; publishDate: string; source: string }) => 
+      source: row[sourceIndex] || '',
+      ig: igIndex >= 0 ? row[igIndex] || '' : '',
+      fb: fbIndex >= 0 ? row[fbIndex] || '' : '',
+      yt: ytIndex >= 0 ? row[ytIndex] || '' : '',
+      content: contentIndex >= 0 ? row[contentIndex] || '' : '',
+      aiContent: aiContentIndex >= 0 ? row[aiContentIndex] || '' : '',
+      location: locationIndex >= 0 ? row[locationIndex] || '' : '',
+    })).filter((item: any) => 
       item.imageUrl || item.authorized || item.status || item.publishDate || item.source
     );
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import { Calendar, RefreshCw, ExternalLink, Check, X, Clock } from "lucide-react";
+import { Calendar, RefreshCw, ExternalLink, Check, X, Clock, ChevronRight, Instagram, Facebook, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -12,12 +13,16 @@ interface SheetRow {
   status: string;
   publishDate: string;
   source: string;
+  ig: string;
+  fb: string;
+  yt: string;
 }
 
 export default function Schedule() {
   const [data, setData] = useState<SheetRow[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fetchData = async () => {
     setLoading(true);
@@ -107,9 +112,25 @@ export default function Schedule() {
     );
   };
 
+  const getSocialIcon = (url: string, type: 'ig' | 'fb' | 'yt') => {
+    if (!url) return <span className="text-muted-foreground">-</span>;
+    
+    const icons = {
+      ig: <Instagram className="w-4 h-4 text-pink-500" />,
+      fb: <Facebook className="w-4 h-4 text-blue-600" />,
+      yt: <Youtube className="w-4 h-4 text-red-600" />,
+    };
+
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
+        {icons[type]}
+      </a>
+    );
+  };
+
   return (
     <Layout>
-      <div className="p-4 md:p-8 max-w-6xl mx-auto">
+      <div className="p-4 md:p-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
           <div className="flex items-center justify-between mb-2">
@@ -154,15 +175,20 @@ export default function Schedule() {
                     <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">受權刊出</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">刊登情況</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">刊出日期</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">IG</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">FB</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">YT</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">操作</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.map((row, index) => (
                     <tr 
                       key={row.id} 
-                      className={`border-b border-border/50 hover:bg-secondary/30 transition-colors ${
+                      className={`border-b border-border/50 hover:bg-secondary/30 transition-colors cursor-pointer ${
                         index % 2 === 0 ? 'bg-card' : 'bg-secondary/10'
                       }`}
+                      onClick={() => navigate(`/schedule/${row.id}`)}
                     >
                       <td className="px-4 py-3">
                         {row.imageUrl ? (
@@ -182,6 +208,7 @@ export default function Schedule() {
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="text-primary hover:underline"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <ExternalLink className="w-4 h-4" />
                             </a>
@@ -207,6 +234,27 @@ export default function Schedule() {
                         <span className="text-sm text-foreground">
                           {row.publishDate || '-'}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        {getSocialIcon(row.ig, 'ig')}
+                      </td>
+                      <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        {getSocialIcon(row.fb, 'fb')}
+                      </td>
+                      <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        {getSocialIcon(row.yt, 'yt')}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/schedule/${row.id}`);
+                          }}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
                       </td>
                     </tr>
                   ))}
