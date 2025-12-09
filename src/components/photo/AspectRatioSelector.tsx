@@ -8,36 +8,48 @@ interface AspectRatioSelectorProps {
 }
 
 const ratios = [
-  { id: "horizontal" as const, label: "16:9", icon: "▬" },
-  { id: "square" as const, label: "1:1", icon: "■" },
-  { id: "vertical" as const, label: "9:16", icon: "▮" },
+  { id: "horizontal" as const, label: "16:9", width: 32, height: 18 },
+  { id: "square" as const, label: "1:1", width: 24, height: 24 },
+  { id: "vertical" as const, label: "9:16", width: 18, height: 32 },
 ];
 
 export function AspectRatioSelector({ value, onChange }: AspectRatioSelectorProps) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-sm text-muted-foreground">比例</span>
-      <div className="flex gap-1 bg-secondary/50 rounded-lg p-1">
-        {ratios.map((ratio) => {
-          const isActive = value === ratio.id;
-          return (
-            <button
-              key={ratio.id}
-              type="button"
-              onClick={() => onChange(ratio.id)}
+    <div className="flex items-center justify-center gap-6">
+      {ratios.map((ratio) => {
+        const isActive = value === ratio.id;
+        return (
+          <button
+            key={ratio.id}
+            type="button"
+            onClick={() => onChange(ratio.id)}
+            className="flex flex-col items-center gap-2 group"
+          >
+            {/* Visual ratio box */}
+            <div
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200",
+                "border-2 rounded transition-all duration-200 flex items-center justify-center",
                 isActive
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  ? "border-primary bg-primary/10 shadow-[0_0_12px_rgba(var(--primary),0.3)]"
+                  : "border-muted-foreground/30 bg-transparent group-hover:border-muted-foreground/50"
+              )}
+              style={{
+                width: ratio.width,
+                height: ratio.height,
+              }}
+            />
+            {/* Label */}
+            <span
+              className={cn(
+                "text-xs font-medium transition-colors",
+                isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
               )}
             >
-              <span className="text-xs">{ratio.icon}</span>
-              <span>{ratio.label}</span>
-            </button>
-          );
-        })}
-      </div>
+              {ratio.label}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
