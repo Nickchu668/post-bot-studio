@@ -100,9 +100,9 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
   const getCropDimensions = () => {
     const ratio = aspectRatioValues[aspectRatio];
     if (ratio >= 1) {
-      return { width: 65, height: 65 / ratio };
+      return { width: 70, height: 70 / ratio };
     } else {
-      return { width: 50 * ratio, height: 80 };
+      return { width: 45 * ratio, height: 75 };
     }
   };
 
@@ -116,15 +116,15 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           className={cn(
-            "relative border-2 border-dashed rounded-2xl p-8 transition-all duration-200",
+            "relative border-2 border-dashed rounded-xl p-8 transition-all duration-200",
             isDragging
-              ? "border-primary bg-primary/10"
-              : "border-border hover:border-primary/50 bg-card/50"
+              ? "border-primary bg-primary/5"
+              : "border-border hover:border-primary/50 bg-card/30"
           )}
         >
           <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-secondary/80 flex items-center justify-center">
-              <ImageIcon className="w-8 h-8 text-muted-foreground" />
+            <div className="w-14 h-14 rounded-full bg-secondary/50 flex items-center justify-center">
+              <ImageIcon className="w-7 h-7 text-muted-foreground" />
             </div>
             <div className="text-center">
               <p className="text-foreground font-medium">拖放圖片到這裡</p>
@@ -175,7 +175,7 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
           {/* Image container with crop overlay */}
           <div 
             ref={containerRef}
-            className="relative bg-secondary/30 rounded-2xl overflow-hidden select-none"
+            className="relative bg-black rounded-xl overflow-hidden select-none"
             onMouseMove={handleCropMouseMove}
             onMouseUp={handleCropMouseUp}
             onMouseLeave={handleCropMouseUp}
@@ -183,22 +183,19 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
             onTouchEnd={handleTouchEnd}
           >
             <div className="relative w-full aspect-[4/3]">
-              {/* Background image */}
+              {/* Background image - dimmed */}
               <img
                 src={image}
                 alt="Preview"
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover opacity-40"
                 draggable={false}
               />
-              
-              {/* Dark overlay */}
-              <div className="absolute inset-0 bg-black/60" />
               
               {/* Crop frame - draggable */}
               <div 
                 className={cn(
-                  "absolute border-2 border-cyan-400 cursor-move transition-shadow",
-                  isDraggingCrop && "shadow-[0_0_20px_rgba(0,255,255,0.5)]"
+                  "absolute cursor-move transition-all duration-150 rounded-sm overflow-hidden",
+                  isDraggingCrop ? "ring-2 ring-white ring-offset-1 ring-offset-black/50" : ""
                 )}
                 style={{
                   width: `${cropDimensions.width}%`,
@@ -209,28 +206,39 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
                 onMouseDown={handleCropMouseDown}
                 onTouchStart={handleTouchStart}
               >
-                {/* Corner handles */}
-                <div className="absolute -top-1.5 -left-1.5 w-4 h-4 border-t-3 border-l-3 border-cyan-400 bg-cyan-400/20" />
-                <div className="absolute -top-1.5 -right-1.5 w-4 h-4 border-t-3 border-r-3 border-cyan-400 bg-cyan-400/20" />
-                <div className="absolute -bottom-1.5 -left-1.5 w-4 h-4 border-b-3 border-l-3 border-cyan-400 bg-cyan-400/20" />
-                <div className="absolute -bottom-1.5 -right-1.5 w-4 h-4 border-b-3 border-r-3 border-cyan-400 bg-cyan-400/20" />
-                
-                {/* Center move indicator */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="bg-black/40 rounded-full p-2">
-                    <Move className="w-5 h-5 text-cyan-400" />
-                  </div>
-                </div>
-                
                 {/* Clear crop area showing the image */}
                 <div 
-                  className="absolute inset-0 overflow-hidden"
+                  className="absolute inset-0"
                   style={{
                     backgroundImage: `url(${image})`,
                     backgroundSize: `${100 / (cropDimensions.width / 100)}% ${100 / (cropDimensions.height / 100)}%`,
                     backgroundPosition: `${(cropPosition.x - cropDimensions.width / 2) / (100 - cropDimensions.width) * 100}% ${(cropPosition.y - cropDimensions.height / 2) / (100 - cropDimensions.height) * 100}%`,
                   }}
                 />
+                
+                {/* Border overlay */}
+                <div className="absolute inset-0 border-2 border-white/90 rounded-sm pointer-events-none" />
+                
+                {/* Corner handles - white squares */}
+                <div className="absolute -top-1 -left-1 w-3 h-3 bg-white rounded-sm shadow-md" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-sm shadow-md" />
+                <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-white rounded-sm shadow-md" />
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-white rounded-sm shadow-md" />
+                
+                {/* Grid lines (rule of thirds) */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute left-1/3 top-0 bottom-0 w-px bg-white/30" />
+                  <div className="absolute right-1/3 top-0 bottom-0 w-px bg-white/30" />
+                  <div className="absolute top-1/3 left-0 right-0 h-px bg-white/30" />
+                  <div className="absolute bottom-1/3 left-0 right-0 h-px bg-white/30" />
+                </div>
+                
+                {/* Center move indicator */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-70">
+                  <div className="bg-black/50 rounded-full p-1.5">
+                    <Move className="w-4 h-4 text-white" />
+                  </div>
+                </div>
               </div>
             </div>
             
