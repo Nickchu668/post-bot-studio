@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import VideoPost from "./pages/VideoPost";
 import Schedule from "./pages/Schedule";
+import ScheduleEdit from "./pages/ScheduleEdit";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/video" element={<VideoPost />} />
           <Route path="/schedule" element={<Schedule />} />
+          <Route path="/schedule/:id" element={<ScheduleEdit />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
