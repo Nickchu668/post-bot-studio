@@ -1,6 +1,9 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Image, Video, Calendar, Settings, Sparkles } from "lucide-react";
+import { Image, Video, Calendar, Settings, Sparkles, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const navItems = [
   { path: "/", icon: Image, label: "相片出POST" },
@@ -11,6 +14,11 @@ const navItems = [
 
 export function Sidebar() {
   const location = useLocation();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("已登出");
+  };
 
   return (
     <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 flex-col bg-sidebar border-r border-sidebar-border">
@@ -51,7 +59,16 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 border-t border-sidebar-border space-y-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLogout}
+          className="w-full justify-start text-muted-foreground hover:text-foreground"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          登出
+        </Button>
         <div className="px-4 py-3 rounded-lg bg-secondary/50">
           <p className="text-xs text-muted-foreground">Powered by AI</p>
           <p className="text-sm font-medium text-foreground">自動化您的社交媒體</p>

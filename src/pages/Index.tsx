@@ -8,17 +8,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2, Sparkles, Calendar, ArrowRight, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const WEBHOOK_URL = "https://hook.eu2.make.com/11slv9iujzflrr52e3uv6eb2ex947io7";
 
 export default function Index() {
   const navigate = useNavigate();
+  const { user, loading } = useAuth(true); // Require authentication
   const [image, setImage] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("square");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      </Layout>
+    );
+  }
 
   const uploadImageToStorage = async (base64Image: string): Promise<string | null> => {
     try {
@@ -32,8 +45,9 @@ export default function Index() {
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: 'image/jpeg' });
       
-      // Generate unique filename
-      const fileName = `photo_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+      // Generate unique filename with user folder for RLS
+      const userId = user?.id || 'anonymous';
+      const fileName = `${userId}/photo_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
       
       // Upload to Supabase storage
       const { data, error } = await supabase.storage
