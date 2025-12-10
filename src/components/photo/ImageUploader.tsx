@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { Upload, Camera, X, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,20 +16,45 @@ const aspectRatioValues = {
   vertical: 9 / 16,
 };
 
+type DragMode = 'none' | 'move' | 'resize-tl' | 'resize-tr' | 'resize-bl' | 'resize-br';
+
 export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [cropPosition, setCropPosition] = useState({ x: 50, y: 50 });
-  const [isDraggingCrop, setIsDraggingCrop] = useState(false);
+  
+  // Crop box state: position and size in percentage
+  const [cropBox, setCropBox] = useState({ x: 20, y: 15, width: 60, height: 70 });
+  const [dragMode, setDragMode] = useState<DragMode>('none');
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0, box: cropBox });
+
+  // Reset crop box when aspect ratio changes
+  useEffect(() => {
+    const ratio = aspectRatioValues[aspectRatio];
+    let width: number, height: number;
+    
+    if (ratio >= 1) {
+      width = 70;
+      height = width / ratio;
+    } else {
+      height = 80;
+      width = height * ratio;
+    }
+    
+    setCropBox({
+      x: (100 - width) / 2,
+      y: (100 - height) / 2,
+      width,
+      height,
+    });
+  }, [aspectRatio]);
 
   const handleFileSelect = (file: File) => {
     if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = (e) => {
         onImageChange(e.target?.result as string);
-        setCropPosition({ x: 50, y: 50 });
       };
       reader.readAsDataURL(file);
     }
@@ -51,62 +76,98 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
     setIsDragging(false);
   };
 
-  const handleCropMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDraggingCrop(true);
-  }, []);
-
-  const handleCropMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDraggingCrop || !containerRef.current) return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    
-    setCropPosition({
-      x: Math.max(15, Math.min(85, x)),
-      y: Math.max(15, Math.min(85, y)),
-    });
-  }, [isDraggingCrop]);
-
-  const handleCropMouseUp = useCallback(() => {
-    setIsDraggingCrop(false);
-  }, []);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
-    setIsDraggingCrop(true);
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDraggingCrop || !containerRef.current) return;
-    
-    const touch = e.touches[0];
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = ((touch.clientX - rect.left) / rect.width) * 100;
-    const y = ((touch.clientY - rect.top) / rect.height) * 100;
-    
-    setCropPosition({
-      x: Math.max(15, Math.min(85, x)),
-      y: Math.max(15, Math.min(85, y)),
-    });
-  }, [isDraggingCrop]);
-
-  const handleTouchEnd = useCallback(() => {
-    setIsDraggingCrop(false);
-  }, []);
-
-  // Calculate crop overlay dimensions based on aspect ratio
-  const getCropDimensions = () => {
-    const ratio = aspectRatioValues[aspectRatio];
-    if (ratio >= 1) {
-      return { width: 65, height: 65 / ratio };
-    } else {
-      return { width: 40 * ratio, height: 70 };
+  const getClientPos = (e: React.MouseEvent | React.TouchEvent) => {
+    if ('touches' in e) {
+      return { x: e.touches[0].clientX, y: e.touches[0].clientY };
     }
+    return { x: e.clientX, y: e.clientY };
   };
 
-  const cropDimensions = getCropDimensions();
+  const handleStart = useCallback((mode: DragMode, e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const pos = getClientPos(e);
+    setDragMode(mode);
+    setDragStart({ x: pos.x, y: pos.y, box: { ...cropBox } });
+  }, [cropBox]);
+
+  const handleMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    if (dragMode === 'none' || !containerRef.current) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const pos = getClientPos(e);
+    const deltaX = ((pos.x - dragStart.x) / rect.width) * 100;
+    const deltaY = ((pos.y - dragStart.y) / rect.height) * 100;
+    const ratio = aspectRatioValues[aspectRatio];
+    
+    if (dragMode === 'move') {
+      // Move the crop box
+      const newX = Math.max(0, Math.min(100 - dragStart.box.width, dragStart.box.x + deltaX));
+      const newY = Math.max(0, Math.min(100 - dragStart.box.height, dragStart.box.y + deltaY));
+      setCropBox(prev => ({ ...prev, x: newX, y: newY }));
+    } else {
+      // Resize from corners while maintaining aspect ratio
+      let newWidth = dragStart.box.width;
+      let newHeight = dragStart.box.height;
+      let newX = dragStart.box.x;
+      let newY = dragStart.box.y;
+      
+      if (dragMode === 'resize-br') {
+        newWidth = Math.max(20, Math.min(100 - dragStart.box.x, dragStart.box.width + deltaX));
+        newHeight = newWidth / ratio;
+        if (newY + newHeight > 100) {
+          newHeight = 100 - newY;
+          newWidth = newHeight * ratio;
+        }
+      } else if (dragMode === 'resize-bl') {
+        newWidth = Math.max(20, dragStart.box.width - deltaX);
+        newHeight = newWidth / ratio;
+        newX = dragStart.box.x + dragStart.box.width - newWidth;
+        if (newX < 0) {
+          newX = 0;
+          newWidth = dragStart.box.x + dragStart.box.width;
+          newHeight = newWidth / ratio;
+        }
+        if (newY + newHeight > 100) {
+          newHeight = 100 - newY;
+          newWidth = newHeight * ratio;
+          newX = dragStart.box.x + dragStart.box.width - newWidth;
+        }
+      } else if (dragMode === 'resize-tr') {
+        newWidth = Math.max(20, Math.min(100 - dragStart.box.x, dragStart.box.width + deltaX));
+        newHeight = newWidth / ratio;
+        newY = dragStart.box.y + dragStart.box.height - newHeight;
+        if (newY < 0) {
+          newY = 0;
+          newHeight = dragStart.box.y + dragStart.box.height;
+          newWidth = newHeight * ratio;
+        }
+      } else if (dragMode === 'resize-tl') {
+        newWidth = Math.max(20, dragStart.box.width - deltaX);
+        newHeight = newWidth / ratio;
+        newX = dragStart.box.x + dragStart.box.width - newWidth;
+        newY = dragStart.box.y + dragStart.box.height - newHeight;
+        if (newX < 0) {
+          newX = 0;
+          newWidth = dragStart.box.x + dragStart.box.width;
+          newHeight = newWidth / ratio;
+          newY = dragStart.box.y + dragStart.box.height - newHeight;
+        }
+        if (newY < 0) {
+          newY = 0;
+          newHeight = dragStart.box.y + dragStart.box.height;
+          newWidth = newHeight * ratio;
+          newX = dragStart.box.x + dragStart.box.width - newWidth;
+        }
+      }
+      
+      setCropBox({ x: newX, y: newY, width: newWidth, height: newHeight });
+    }
+  }, [dragMode, dragStart, aspectRatio]);
+
+  const handleEnd = useCallback(() => {
+    setDragMode('none');
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -176,54 +237,102 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
           <div 
             ref={containerRef}
             className="relative bg-card rounded-2xl overflow-hidden select-none"
-            onMouseMove={handleCropMouseMove}
-            onMouseUp={handleCropMouseUp}
-            onMouseLeave={handleCropMouseUp}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            onMouseMove={handleMove}
+            onMouseUp={handleEnd}
+            onMouseLeave={handleEnd}
+            onTouchMove={handleMove}
+            onTouchEnd={handleEnd}
           >
             <div className="relative w-full aspect-[4/3]">
-              {/* Background image - full brightness */}
+              {/* Background image - dimmed */}
               <img
                 src={image}
                 alt="Preview"
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover brightness-50"
                 draggable={false}
               />
               
-              {/* Dark overlay outside crop area */}
-              <div className="absolute inset-0 bg-black/50 pointer-events-none" />
-              
-              {/* Crop frame - draggable with dashed border */}
+              {/* Crop frame - shows clear image */}
               <div 
-                className="absolute cursor-move transition-all duration-100"
+                className="absolute overflow-hidden cursor-move"
                 style={{
-                  width: `${cropDimensions.width}%`,
-                  height: `${cropDimensions.height}%`,
-                  left: `${cropPosition.x - cropDimensions.width / 2}%`,
-                  top: `${cropPosition.y - cropDimensions.height / 2}%`,
+                  left: `${cropBox.x}%`,
+                  top: `${cropBox.y}%`,
+                  width: `${cropBox.width}%`,
+                  height: `${cropBox.height}%`,
                 }}
-                onMouseDown={handleCropMouseDown}
-                onTouchStart={handleTouchStart}
+                onMouseDown={(e) => handleStart('move', e)}
+                onTouchStart={(e) => handleStart('move', e)}
               >
-                {/* Clear crop area showing the image */}
-                <div 
-                  className="absolute inset-0 overflow-hidden"
+                {/* Clear image inside crop area */}
+                <img
+                  src={image}
+                  alt="Crop preview"
+                  className="absolute object-cover pointer-events-none"
                   style={{
-                    backgroundImage: `url(${image})`,
-                    backgroundSize: `${100 / (cropDimensions.width / 100)}% ${100 / (cropDimensions.height / 100)}%`,
-                    backgroundPosition: `${(cropPosition.x - cropDimensions.width / 2) / (100 - cropDimensions.width) * 100}% ${(cropPosition.y - cropDimensions.height / 2) / (100 - cropDimensions.height) * 100}%`,
+                    width: `${100 / (cropBox.width / 100)}%`,
+                    height: `${100 / (cropBox.height / 100)}%`,
+                    left: `-${cropBox.x / (cropBox.width / 100)}%`,
+                    top: `-${cropBox.y / (cropBox.height / 100)}%`,
                   }}
+                  draggable={false}
                 />
                 
                 {/* Dashed border */}
                 <div className="absolute inset-0 border-2 border-dashed border-white pointer-events-none" />
-                
-                {/* Corner handles - small squares */}
-                <div className="absolute -top-1 -left-1 w-2.5 h-2.5 border-2 border-white bg-transparent" />
-                <div className="absolute -top-1 -right-1 w-2.5 h-2.5 border-2 border-white bg-transparent" />
-                <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-2 border-white bg-transparent" />
-                <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-2 border-white bg-transparent" />
+              </div>
+              
+              {/* Corner handles - outside crop div for better hit area */}
+              {/* Top-left */}
+              <div 
+                className="absolute w-4 h-4 cursor-nwse-resize z-10 flex items-center justify-center"
+                style={{
+                  left: `calc(${cropBox.x}% - 8px)`,
+                  top: `calc(${cropBox.y}% - 8px)`,
+                }}
+                onMouseDown={(e) => handleStart('resize-tl', e)}
+                onTouchStart={(e) => handleStart('resize-tl', e)}
+              >
+                <div className="w-3 h-3 border-2 border-white bg-transparent" />
+              </div>
+              
+              {/* Top-right */}
+              <div 
+                className="absolute w-4 h-4 cursor-nesw-resize z-10 flex items-center justify-center"
+                style={{
+                  left: `calc(${cropBox.x + cropBox.width}% - 8px)`,
+                  top: `calc(${cropBox.y}% - 8px)`,
+                }}
+                onMouseDown={(e) => handleStart('resize-tr', e)}
+                onTouchStart={(e) => handleStart('resize-tr', e)}
+              >
+                <div className="w-3 h-3 border-2 border-white bg-transparent" />
+              </div>
+              
+              {/* Bottom-left */}
+              <div 
+                className="absolute w-4 h-4 cursor-nesw-resize z-10 flex items-center justify-center"
+                style={{
+                  left: `calc(${cropBox.x}% - 8px)`,
+                  top: `calc(${cropBox.y + cropBox.height}% - 8px)`,
+                }}
+                onMouseDown={(e) => handleStart('resize-bl', e)}
+                onTouchStart={(e) => handleStart('resize-bl', e)}
+              >
+                <div className="w-3 h-3 border-2 border-white bg-transparent" />
+              </div>
+              
+              {/* Bottom-right */}
+              <div 
+                className="absolute w-4 h-4 cursor-nwse-resize z-10 flex items-center justify-center"
+                style={{
+                  left: `calc(${cropBox.x + cropBox.width}% - 8px)`,
+                  top: `calc(${cropBox.y + cropBox.height}% - 8px)`,
+                }}
+                onMouseDown={(e) => handleStart('resize-br', e)}
+                onTouchStart={(e) => handleStart('resize-br', e)}
+              >
+                <div className="w-3 h-3 border-2 border-white bg-transparent" />
               </div>
             </div>
             
