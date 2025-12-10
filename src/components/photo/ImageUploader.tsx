@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
-import { Upload, Camera, X, ImageIcon } from "lucide-react";
+import { Upload, Camera, X, ImageIcon, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { AspectRatio } from "./AspectRatioSelector";
 
@@ -21,6 +22,7 @@ type DragMode = 'none' | 'move' | 'resize-tl' | 'resize-tr' | 'resize-bl' | 'res
 export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [zoom, setZoom] = useState(100);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   
@@ -55,10 +57,13 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
       const reader = new FileReader();
       reader.onload = (e) => {
         onImageChange(e.target?.result as string);
+        setZoom(100); // Reset zoom on new image
       };
       reader.readAsDataURL(file);
     }
   };
+
+  const zoomScale = zoom / 100;
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -243,12 +248,18 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
             onTouchMove={handleMove}
             onTouchEnd={handleEnd}
           >
-            <div className="relative w-full aspect-[4/3]">
-              {/* Background image - dimmed */}
+            <div className="relative w-full aspect-[4/3] overflow-hidden">
+              {/* Background image - dimmed with zoom */}
               <img
                 src={image}
                 alt="Preview"
-                className="absolute inset-0 w-full h-full object-cover brightness-50"
+                className="absolute object-cover brightness-50 pointer-events-none"
+                style={{
+                  width: `${100 * zoomScale}%`,
+                  height: `${100 * zoomScale}%`,
+                  left: `${(100 - 100 * zoomScale) / 2}%`,
+                  top: `${(100 - 100 * zoomScale) / 2}%`,
+                }}
                 draggable={false}
               />
               
@@ -264,16 +275,16 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
                 onMouseDown={(e) => handleStart('move', e)}
                 onTouchStart={(e) => handleStart('move', e)}
               >
-                {/* Clear image inside crop area */}
+                {/* Clear image inside crop area with zoom */}
                 <img
                   src={image}
                   alt="Crop preview"
                   className="absolute object-cover pointer-events-none"
                   style={{
-                    width: `${100 / (cropBox.width / 100)}%`,
-                    height: `${100 / (cropBox.height / 100)}%`,
-                    left: `-${cropBox.x / (cropBox.width / 100)}%`,
-                    top: `-${cropBox.y / (cropBox.height / 100)}%`,
+                    width: `${(100 / (cropBox.width / 100)) * zoomScale}%`,
+                    height: `${(100 / (cropBox.height / 100)) * zoomScale}%`,
+                    left: `calc(-${cropBox.x / (cropBox.width / 100)}% * ${zoomScale} + ${(100 - 100 * zoomScale) / 2 / (cropBox.width / 100)}%)`,
+                    top: `calc(-${cropBox.y / (cropBox.height / 100)}% * ${zoomScale} + ${(100 - 100 * zoomScale) / 2 / (cropBox.height / 100)}%)`,
                   }}
                   draggable={false}
                 />
@@ -344,6 +355,21 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
             >
               <X className="w-4 h-4" />
             </button>
+          </div>
+          
+          {/* Zoom slider */}
+          <div className="flex items-center gap-3 px-2">
+            <ZoomOut className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <Slider
+              value={[zoom]}
+              onValueChange={(value) => setZoom(value[0])}
+              min={50}
+              max={200}
+              step={5}
+              className="flex-1"
+            />
+            <ZoomIn className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <span className="text-sm text-muted-foreground w-12 text-right">{zoom}%</span>
           </div>
           
           {/* Change image button */}
