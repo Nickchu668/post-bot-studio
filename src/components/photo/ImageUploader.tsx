@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from "react";
-import { Upload, Camera, X, ImageIcon, Move } from "lucide-react";
+import { Upload, Camera, X, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AspectRatio } from "./AspectRatioSelector";
@@ -100,9 +100,9 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
   const getCropDimensions = () => {
     const ratio = aspectRatioValues[aspectRatio];
     if (ratio >= 1) {
-      return { width: 70, height: 70 / ratio };
+      return { width: 65, height: 65 / ratio };
     } else {
-      return { width: 45 * ratio, height: 75 };
+      return { width: 40 * ratio, height: 70 };
     }
   };
 
@@ -175,7 +175,7 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
           {/* Image container with crop overlay */}
           <div 
             ref={containerRef}
-            className="relative bg-black rounded-xl overflow-hidden select-none"
+            className="relative bg-card rounded-2xl overflow-hidden select-none"
             onMouseMove={handleCropMouseMove}
             onMouseUp={handleCropMouseUp}
             onMouseLeave={handleCropMouseUp}
@@ -183,20 +183,20 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
             onTouchEnd={handleTouchEnd}
           >
             <div className="relative w-full aspect-[4/3]">
-              {/* Background image - dimmed */}
+              {/* Background image - full brightness */}
               <img
                 src={image}
                 alt="Preview"
-                className="absolute inset-0 w-full h-full object-cover opacity-40"
+                className="absolute inset-0 w-full h-full object-cover"
                 draggable={false}
               />
               
-              {/* Crop frame - draggable */}
+              {/* Dark overlay outside crop area */}
+              <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+              
+              {/* Crop frame - draggable with dashed border */}
               <div 
-                className={cn(
-                  "absolute cursor-move transition-all duration-150 rounded-sm overflow-hidden",
-                  isDraggingCrop ? "ring-2 ring-white ring-offset-1 ring-offset-black/50" : ""
-                )}
+                className="absolute cursor-move transition-all duration-100"
                 style={{
                   width: `${cropDimensions.width}%`,
                   height: `${cropDimensions.height}%`,
@@ -208,7 +208,7 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
               >
                 {/* Clear crop area showing the image */}
                 <div 
-                  className="absolute inset-0"
+                  className="absolute inset-0 overflow-hidden"
                   style={{
                     backgroundImage: `url(${image})`,
                     backgroundSize: `${100 / (cropDimensions.width / 100)}% ${100 / (cropDimensions.height / 100)}%`,
@@ -216,29 +216,14 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
                   }}
                 />
                 
-                {/* Border overlay */}
-                <div className="absolute inset-0 border-2 border-white/90 rounded-sm pointer-events-none" />
+                {/* Dashed border */}
+                <div className="absolute inset-0 border-2 border-dashed border-white pointer-events-none" />
                 
-                {/* Corner handles - white squares */}
-                <div className="absolute -top-1 -left-1 w-3 h-3 bg-white rounded-sm shadow-md" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-sm shadow-md" />
-                <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-white rounded-sm shadow-md" />
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-white rounded-sm shadow-md" />
-                
-                {/* Grid lines (rule of thirds) */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute left-1/3 top-0 bottom-0 w-px bg-white/30" />
-                  <div className="absolute right-1/3 top-0 bottom-0 w-px bg-white/30" />
-                  <div className="absolute top-1/3 left-0 right-0 h-px bg-white/30" />
-                  <div className="absolute bottom-1/3 left-0 right-0 h-px bg-white/30" />
-                </div>
-                
-                {/* Center move indicator */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-70">
-                  <div className="bg-black/50 rounded-full p-1.5">
-                    <Move className="w-4 h-4 text-white" />
-                  </div>
-                </div>
+                {/* Corner handles - small squares */}
+                <div className="absolute -top-1 -left-1 w-2.5 h-2.5 border-2 border-white bg-transparent" />
+                <div className="absolute -top-1 -right-1 w-2.5 h-2.5 border-2 border-white bg-transparent" />
+                <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-2 border-white bg-transparent" />
+                <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-2 border-white bg-transparent" />
               </div>
             </div>
             
@@ -246,7 +231,7 @@ export function ImageUploader({ image, aspectRatio, onImageChange }: ImageUpload
             <button
               type="button"
               onClick={() => onImageChange(null)}
-              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors z-10"
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-destructive transition-colors z-10"
             >
               <X className="w-4 h-4" />
             </button>
