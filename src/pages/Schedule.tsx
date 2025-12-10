@@ -175,7 +175,7 @@ export default function Schedule() {
                     <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">受權刊出</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">刊登情況</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">刊出日期</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">IG</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">instagram</th>
                     <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">FB</th>
                     <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">YT</th>
                     <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">操作</th>
