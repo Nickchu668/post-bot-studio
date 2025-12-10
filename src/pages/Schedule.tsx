@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import { Calendar, RefreshCw, ExternalLink, Check, X, Clock, ChevronRight, Instagram, Facebook, Youtube, Filter } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, RefreshCw, ExternalLink, Check, X, Clock, ChevronRight, Instagram, Facebook, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,39 +21,8 @@ interface SheetRow {
 export default function Schedule() {
   const [data, setData] = useState<SheetRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [authFilter, setAuthFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  const filteredData = data.filter((row) => {
-    // Authorization filter
-    if (authFilter !== 'all') {
-      const lower = row.authorized.toLowerCase();
-      if (authFilter === 'authorized' && !['是', 'yes', 'true', '已授權'].includes(lower)) {
-        return false;
-      }
-      if (authFilter === 'unauthorized' && !['否', 'no', 'false'].includes(lower)) {
-        return false;
-      }
-    }
-    
-    // Status filter
-    if (statusFilter !== 'all') {
-      const lowerStatus = row.status.toLowerCase();
-      if (statusFilter === 'published' && !lowerStatus.includes('已刊出') && !lowerStatus.includes('完成')) {
-        return false;
-      }
-      if (statusFilter === 'pending' && !lowerStatus.includes('待')) {
-        return false;
-      }
-      if (statusFilter === 'cancelled' && !lowerStatus.includes('取消') && !lowerStatus.includes('否')) {
-        return false;
-      }
-    }
-    
-    return true;
-  });
 
   const fetchData = async () => {
     setLoading(true);
@@ -185,58 +153,6 @@ export default function Schedule() {
           <p className="text-muted-foreground">從 Google Sheet 同步的發佈排程資料</p>
         </div>
 
-        {/* Filters */}
-        {!loading && data.length > 0 && (
-          <div className="mb-4 flex flex-wrap items-center gap-4 animate-slide-up">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">篩選:</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">授權狀態</span>
-              <Select value={authFilter} onValueChange={setAuthFilter}>
-                <SelectTrigger className="w-[120px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部</SelectItem>
-                  <SelectItem value="authorized">已授權</SelectItem>
-                  <SelectItem value="unauthorized">未授權</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">刊登情況</span>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[120px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部</SelectItem>
-                  <SelectItem value="published">已刊出</SelectItem>
-                  <SelectItem value="pending">待刊出</SelectItem>
-                  <SelectItem value="cancelled">已取消</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {(authFilter !== 'all' || statusFilter !== 'all') && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => {
-                  setAuthFilter('all');
-                  setStatusFilter('all');
-                }}
-              >
-                清除篩選
-              </Button>
-            )}
-            <span className="text-sm text-muted-foreground ml-auto">
-              顯示 {filteredData.length} / {data.length} 筆
-            </span>
-          </div>
-        )}
-
         {/* Data Table */}
         <div className="bg-card rounded-2xl shadow-card overflow-hidden animate-slide-up">
           {loading ? (
@@ -266,7 +182,7 @@ export default function Schedule() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((row, index) => (
+                  {data.map((row, index) => (
                     <tr 
                       key={row.id} 
                       className={`border-b border-border/50 hover:bg-secondary/30 transition-colors cursor-pointer ${
