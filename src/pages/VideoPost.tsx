@@ -1,22 +1,8 @@
 import { Layout } from "@/components/layout/Layout";
-import { Video, Upload, Sparkles, Loader2 } from "lucide-react";
+import { Video, Upload, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
 
 export default function VideoPost() {
-  const { loading } = useAuth(true); // Require authentication
-
-  // Show loading state while checking auth
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-        </div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout>
       <div className="p-4 md:p-8 max-w-2xl mx-auto">

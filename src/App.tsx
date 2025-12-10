@@ -8,7 +8,6 @@ import VideoPost from "./pages/VideoPost";
 import Schedule from "./pages/Schedule";
 import ScheduleEdit from "./pages/ScheduleEdit";
 import Dashboard from "./pages/Dashboard";
-import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,7 +19,6 @@ const App = () => (
       <Sonner position="top-center" />
       <BrowserRouter basename="/post-bot-studio">
         <Routes>
-          <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<Index />} />
           <Route path="/video" element={<VideoPost />} />
           <Route path="/schedule" element={<Schedule />} />

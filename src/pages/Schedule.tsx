@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import { Calendar, RefreshCw, ExternalLink, Check, X, Clock, ChevronRight, Instagram, Facebook, Youtube, Filter, Loader2 } from "lucide-react";
+import { Calendar, RefreshCw, ExternalLink, Check, X, Clock, ChevronRight, Instagram, Facebook, Youtube, Filter } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 
 interface SheetRow {
   id: number;
@@ -21,24 +20,12 @@ interface SheetRow {
 }
 
 export default function Schedule() {
-  const { loading: authLoading } = useAuth(true); // Require authentication
   const [data, setData] = useState<SheetRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [authFilter, setAuthFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  // Show loading state while checking auth
-  if (authLoading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-        </div>
-      </Layout>
-    );
-  }
 
   const filteredData = data.filter((row) => {
     // Authorization filter
