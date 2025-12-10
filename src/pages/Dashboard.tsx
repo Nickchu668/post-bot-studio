@@ -1,5 +1,6 @@
 import { Layout } from "@/components/layout/Layout";
-import { Settings, BarChart3, Users, Zap, TrendingUp, ImageIcon, Video, Calendar } from "lucide-react";
+import { Settings, BarChart3, Users, Zap, TrendingUp, ImageIcon, Video, Calendar, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const stats = [
   { label: "已發佈貼文", value: "0", icon: ImageIcon, color: "text-primary" },
@@ -14,6 +15,18 @@ const recentActivity = [
 ];
 
 export default function Dashboard() {
+  const { loading } = useAuth(true); // Require authentication
+
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      </Layout>
+    );
+  }
   return (
     <Layout>
       <div className="p-4 md:p-8 max-w-4xl mx-auto">

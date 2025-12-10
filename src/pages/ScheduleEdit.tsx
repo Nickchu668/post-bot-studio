@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import { ArrowLeft, Calendar, ExternalLink, Instagram, Facebook, Youtube, MapPin, FileText } from "lucide-react";
+import { ArrowLeft, Calendar, ExternalLink, Instagram, Facebook, Youtube, MapPin, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SheetRow {
   id: number;
@@ -23,11 +24,23 @@ interface SheetRow {
 }
 
 export default function ScheduleEdit() {
+  const { loading: authLoading } = useAuth(true); // Require authentication
   const { id } = useParams();
   const navigate = useNavigate();
   const [data, setData] = useState<SheetRow | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Show loading state while checking auth
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      </Layout>
+    );
+  }
 
   useEffect(() => {
     const fetchData = async () => {
